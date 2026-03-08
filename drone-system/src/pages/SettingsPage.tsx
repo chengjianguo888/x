@@ -55,6 +55,7 @@ export default function SettingsPage() {
     api: 'idle', data: 'idle', socket: 'idle'
   });
   const [saved, setSaved] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const set = <K extends keyof typeof defaultSettings>(key: K, value: typeof defaultSettings[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -67,12 +68,13 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const handleReset = () => {
-    if (confirm('确定要将所有设置恢复为默认值吗？')) {
-      setSettings(defaultSettings);
-      setSaved(false);
-      showToast('info', '设置已恢复为默认值');
-    }
+  const handleReset = () => setShowResetConfirm(true);
+
+  const confirmReset = () => {
+    setSettings(defaultSettings);
+    setSaved(false);
+    setShowResetConfirm(false);
+    showToast('info', '设置已恢复为默认值');
   };
 
   const handleTestConnection = (type: string) => {
@@ -300,6 +302,19 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="glass-card rounded-2xl w-full max-w-sm p-6 animate-fade-in">
+            <h3 className="text-slate-100 font-bold text-lg mb-2">确认重置</h3>
+            <p className="text-slate-400 text-sm mb-5">确定要将所有设置恢复为默认值吗？所有自定义配置将会丢失。</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowResetConfirm(false)} className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-lg text-sm transition-all">取消</button>
+              <button onClick={confirmReset} className="flex-1 bg-red-500 hover:bg-red-400 text-white py-2.5 rounded-lg text-sm transition-all font-medium">确认重置</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

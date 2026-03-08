@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import type { Drone, Mission, MaintenanceRecord, Alert, User } from '../types';
 import {
   mockDrones as initDrones,
@@ -50,14 +50,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<Alert[]>(initAlerts);
   const [users, setUsers] = useState<User[]>(initUsers);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    const timers = toastTimers.current;
+    return () => { Object.values(timers).forEach(clearTimeout); };
+  }, []);
 
   const showToast = useCallback((type: Toast['type'], message: string) => {
     const id = Date.now().toString();
     setToasts(prev => [...prev, { id, type, message }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+    toastTimers.current[id] = setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+      delete toastTimers.current[id];
+    }, 3500);
   }, []);
 
   const dismissToast = useCallback((id: string) => {
+    clearTimeout(toastTimers.current[id]);
+    delete toastTimers.current[id];
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 

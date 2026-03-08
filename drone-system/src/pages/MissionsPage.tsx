@@ -29,6 +29,7 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
 
 function MissionCard({ mission }: { mission: Mission }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const { updateMissionStatus, showToast } = useStore();
   const status = statusConfig[mission.status];
   const type = typeConfig[mission.type];
@@ -50,9 +51,13 @@ function MissionCard({ mission }: { mission: Mission }) {
   };
 
   const handleCancel = () => {
-    if (confirm(`确定要取消任务「${mission.name}」吗？`)) {
+    if (confirmCancel) {
       updateMissionStatus(mission.id, 'cancelled');
       showToast('error', `任务「${mission.name}」已取消`);
+      setConfirmCancel(false);
+    } else {
+      setConfirmCancel(true);
+      setTimeout(() => setConfirmCancel(false), 4000);
     }
   };
 
@@ -126,8 +131,8 @@ function MissionCard({ mission }: { mission: Mission }) {
               </button>
             )}
             {(mission.status === 'planned' || mission.status === 'in_progress' || mission.status === 'paused') && (
-              <button onClick={handleCancel} className="flex items-center gap-1 bg-red-400/10 border border-red-400/30 text-red-400 text-xs px-3 py-1.5 rounded-lg hover:bg-red-400/20 transition-all">
-                <XCircle className="w-3 h-3" />取消
+              <button onClick={handleCancel} className={`flex items-center gap-1 border text-xs px-3 py-1.5 rounded-lg transition-all ${confirmCancel ? 'bg-red-500 border-red-400 text-white font-medium' : 'bg-red-400/10 border-red-400/30 text-red-400 hover:bg-red-400/20'}`}>
+                <XCircle className="w-3 h-3" />{confirmCancel ? '确认取消?' : '取消'}
               </button>
             )}
           </div>

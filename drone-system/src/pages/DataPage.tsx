@@ -187,6 +187,7 @@ export default function DataPage() {
               className="w-7 h-7 rounded text-xs transition-all disabled:opacity-30 hover:bg-slate-700 text-slate-400 disabled:cursor-not-allowed">‹</button>
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               const p = Math.max(1, Math.min(page - 2, totalPages - 4)) + i;
+              if (p < 1 || p > totalPages) return null;
               return (
                 <button key={p} onClick={() => setPage(p)}
                   className={`w-7 h-7 rounded text-xs transition-all ${p === page ? 'bg-cyan-400/20 text-cyan-400' : 'hover:bg-slate-700 text-slate-400'}`}>
