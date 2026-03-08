@@ -16,6 +16,7 @@
 ### 环境要求
 
 - [Python](https://www.python.org/downloads/) >= 3.10
+- 浏览器需联网（自动加载中文字体和样式，无乱码）
 
 ### 安装与运行
 
@@ -27,14 +28,16 @@ cd x
 # 2. 进入 Python 版目录
 cd drone-system-python
 
-# 3. 安装依赖
+# 3. 安装依赖（只需一次）
 pip install -r requirements.txt
 
 # 4. 启动
 python app.py
 ```
 
-启动后在浏览器打开 **http://localhost:5000**。
+启动后在浏览器打开 **http://localhost:5000** 即可直接使用。
+
+> **关于中文显示：** 系统通过 Google Fonts 自动加载中文字体，确保无乱码。浏览器需能联网。
 
 ### 登录账号
 
