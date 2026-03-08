@@ -1,0 +1,4 @@
+drone-system/node_modules/
+drone-system/dist/
+drone-system/.env
+drone-system/.env.local
