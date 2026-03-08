@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}数据概览 - 无人机作业管理系统{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- 页面标题 -->
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold text-white">数据概览</h1>
+    <span class="text-sm text-gray-500">{{ now.strftime('%Y-%m-%d %H:%M') }}</span>
+  </div>
+
+  <!-- 统计卡片 -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="glass-card rounded-xl p-4">
+      <div class="text-gray-400 text-xs mb-1">在线无人机</div>
+      <div class="text-2xl font-bold text-drone-accent">{{ stats.active_drones }}<span class="text-sm text-gray-500">/{{ stats.total_drones }}</span></div>
+      <div class="text-xs text-green-400 mt-1">● 运行正常</div>
+    </div>
+    <div class="glass-card rounded-xl p-4">
+      <div class="text-gray-400 text-xs mb-1">今日任务</div>
+      <div class="text-2xl font-bold text-green-400">{{ stats.missions_today_completed }}<span class="text-sm text-gray-500">/{{ stats.missions_today_total }}</span></div>
+      <div class="text-xs text-gray-500 mt-1">已完成/总数</div>
+    </div>
+    <div class="glass-card rounded-xl p-4">
+      <div class="text-gray-400 text-xs mb-1">未处理告警</div>
+      <div class="text-2xl font-bold text-red-400">{{ stats.unresolved_alerts }}</div>
+      <div class="text-xs text-orange-400 mt-1">⚠ 需要关注</div>
+    </div>
+    <div class="glass-card rounded-xl p-4">
+      <div class="text-gray-400 text-xs mb-1">采集数据</div>
+      <div class="text-2xl font-bold text-purple-400">{{ stats.data_collected }} <span class="text-sm">GB</span></div>
+      <div class="text-xs text-green-400 mt-1">↑ 持续增长</div>
+    </div>
+  </div>
+
+  <!-- 图表区域 -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- 飞行趋势 -->
+    <div class="lg:col-span-2 glass-card rounded-xl p-4">
+      <h3 class="text-sm font-medium text-gray-300 mb-4">飞行趋势（近一周）</h3>
+      <div class="h-64">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+    <!-- 任务类型分布 -->
+    <div class="glass-card rounded-xl p-4">
+      <h3 class="text-sm font-medium text-gray-300 mb-4">任务类型分布</h3>
+      <div class="h-64">
+        <canvas id="typeChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 下半区 -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- 设备性能 -->
+    <div class="lg:col-span-2 glass-card rounded-xl p-4">
+      <h3 class="text-sm font-medium text-gray-300 mb-4">设备性能排行</h3>
+      <div class="h-64">
+        <canvas id="perfChart"></canvas>
+      </div>
+    </div>
+
+    <!-- 机队状态 -->
+    <div class="glass-card rounded-xl p-4">
+      <h3 class="text-sm font-medium text-gray-300 mb-4">机队实时状态</h3>
+      <div class="space-y-3">
+        {% for d in drones %}
+        <div class="flex items-center gap-3">
+          <span class="status-dot {{ status_color.get(d.status, 'bg-gray-500') }}"></span>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium truncate">{{ d.name }}</div>
+            <div class="text-xs text-gray-500">{{ status_label.get(d.status, d.status) }}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm font-medium {{ 'text-red-400' if d.battery_level < 30 else 'text-yellow-400' if d.battery_level < 60 else 'text-green-400' }}">{{ d.battery_level }}%</div>
+            <div class="w-16 h-1.5 bg-gray-700 rounded-full mt-1">
+              <div class="h-full rounded-full {{ 'bg-red-500' if d.battery_level < 30 else 'bg-yellow-500' if d.battery_level < 60 else 'bg-green-500' }}" style="width: {{ d.battery_level }}%"></div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 最近任务 -->
+  <div class="glass-card rounded-xl p-4" id="alerts">
+    <h3 class="text-sm font-medium text-gray-300 mb-4">最近任务</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-gray-500 text-left border-b border-drone-border">
+            <th class="pb-2 font-medium">任务名称</th>
+            <th class="pb-2 font-medium">无人机</th>
+            <th class="pb-2 font-medium">操作员</th>
+            <th class="pb-2 font-medium">状态</th>
+            <th class="pb-2 font-medium">进度</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-drone-border/50">
+          {% for m in missions %}
+          <tr>
+            <td class="py-2.5">{{ m.name }}</td>
+            <td class="py-2.5 text-gray-400">{{ m.drone_name }}</td>
+            <td class="py-2.5 text-gray-400">{{ m.pilot_name }}</td>
+            <td class="py-2.5">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs {{ status_color.get(m.status, 'bg-gray-500') }}/20 text-{{ 'cyan' if m.status == 'in_progress' else 'green' if m.status == 'completed' else 'blue' if m.status == 'planned' else 'gray' }}-400">
+                {{ status_label.get(m.status, m.status) }}
+              </span>
+            </td>
+            <td class="py-2.5">
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-1.5 bg-gray-700 rounded-full">
+                  <div class="h-full bg-drone-accent rounded-full" style="width: {{ m.progress or 0 }}%"></div>
+                </div>
+                <span class="text-xs text-gray-400">{{ m.progress or 0 }}%</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  Chart.defaults.color = '#9ca3af';
+  Chart.defaults.borderColor = 'rgba(26, 39, 68, 0.6)';
+
+  // 飞行趋势图
+  const trendData = {{ flight_trend | tojson }};
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: trendData.map(d => d.date),
+      datasets: [
+        { label: '架次', data: trendData.map(d => d.flights), borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.1)', fill: true, tension: 0.4 },
+        { label: '飞行时长(h)', data: trendData.map(d => d.hours), borderColor: '#00ff88', backgroundColor: 'rgba(0,255,136,0.1)', fill: true, tension: 0.4 },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+  });
+
+  // 任务类型饼图
+  const typeData = {{ mission_types | tojson }};
+  new Chart(document.getElementById('typeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: typeData.map(d => d.name),
+      datasets: [{ data: typeData.map(d => d.value), backgroundColor: typeData.map(d => d.color), borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+  });
+
+  // 设备性能图
+  const perfData = {{ drone_performance | tojson }};
+  new Chart(document.getElementById('perfChart'), {
+    type: 'bar',
+    data: {
+      labels: perfData.map(d => d.name),
+      datasets: [
+        { label: '架次', data: perfData.map(d => d.flights), backgroundColor: 'rgba(0,212,255,0.6)' },
+        { label: '效率(%)', data: perfData.map(d => d.efficiency), backgroundColor: 'rgba(0,255,136,0.6)' },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+  });
+</script>
+{% endblock %}

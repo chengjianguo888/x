@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}维护记录 - 无人机作业管理系统{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <h1 class="text-xl font-bold text-white">维护记录</h1>
+    <button onclick="document.getElementById('createModal').classList.remove('hidden')"
+      class="bg-drone-accent hover:bg-cyan-400 text-drone-dark px-4 py-2 rounded-lg text-sm font-medium transition">
+      + 新建维护计划
+    </button>
+  </div>
+
+  <!-- 状态标签 -->
+  <div class="flex gap-2 flex-wrap">
+    {% for key, label in [('all','全部'), ('in_progress','进行中'), ('scheduled','已安排'), ('overdue','已逾期'), ('completed','已完成')] %}
+    <a href="?status={{ key }}"
+       class="px-3 py-1.5 rounded-lg text-sm transition {{ 'bg-drone-accent text-drone-dark font-medium' if status_filter == key else 'glass-card text-gray-400 hover:text-drone-accent' }}">
+      {{ label }}
+      {% if key != 'all' and counts.get(key) %}<span class="ml-1 text-xs opacity-75">({{ counts[key] }})</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- 维护记录列表 -->
+  {% if not records %}
+  <div class="glass-card rounded-xl p-8 text-center text-gray-500">暂无维护记录</div>
+  {% else %}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    {% for r in records %}
+    <div class="glass-card rounded-xl p-4 hover:border-drone-accent/30 transition">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <h3 class="text-sm font-medium text-white">{{ r.drone_name }}</h3>
+          <div class="flex items-center gap-2 mt-1">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs {{ status_color.get(r.status, 'bg-gray-500') }} text-white">
+              {{ status_label.get(r.status, r.status) }}
+            </span>
+            <span class="text-xs text-gray-500">{{ maintenance_type_label.get(r.type, r.type) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-400 mb-3">{{ r.description }}</p>
+
+      <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+        <div class="text-gray-500">计划日期</div>
+        <div class="text-right text-gray-300">{{ r.scheduled_date }}</div>
+        {% if r.completed_date %}
+        <div class="text-gray-500">完成日期</div>
+        <div class="text-right text-green-400">{{ r.completed_date }}</div>
+        {% endif %}
+        {% if r.technician %}
+        <div class="text-gray-500">技术人员</div>
+        <div class="text-right text-gray-300">{{ r.technician }}</div>
+        {% endif %}
+        {% if r.cost is not none %}
+        <div class="text-gray-500">费用</div>
+        <div class="text-right text-yellow-400">¥{{ r.cost }}</div>
+        {% endif %}
+      </div>
+
+      {% if r.parts %}
+      <div class="mb-3">
+        <div class="text-xs text-gray-500 mb-1">使用配件</div>
+        <div class="flex gap-1 flex-wrap">
+          {% for p in r.parts %}
+          <span class="text-xs bg-drone-dark/50 rounded px-2 py-0.5 text-gray-400">{{ p }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 操作按钮 -->
+      <div class="flex gap-2">
+        {% if r.status == 'scheduled' %}
+        <form method="POST" action="{{ url_for('update_maintenance_status', rid=r.id) }}">
+          <input type="hidden" name="status" value="in_progress">
+          <button class="text-xs bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 px-3 py-1.5 rounded transition">▶ 开始维护</button>
+        </form>
+        {% elif r.status == 'in_progress' %}
+        <form method="POST" action="{{ url_for('update_maintenance_status', rid=r.id) }}">
+          <input type="hidden" name="status" value="completed">
+          <button class="text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1.5 rounded transition">✓ 完成</button>
+        </form>
+        {% elif r.status == 'overdue' %}
+        <form method="POST" action="{{ url_for('update_maintenance_status', rid=r.id) }}">
+          <input type="hidden" name="status" value="in_progress">
+          <button class="text-xs bg-red-500/20 text-red-400 hover:bg-red-500/30 px-3 py-1.5 rounded transition">⚠ 立即处理</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- 新建维护计划弹窗 -->
+<div id="createModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+  <div class="glass-card rounded-2xl p-6 w-full max-w-lg">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-white">新建维护计划</h2>
+      <button onclick="document.getElementById('createModal').classList.add('hidden')" class="text-gray-500 hover:text-white">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('create_maintenance') }}" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">无人机</label>
+          <select name="drone_id" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+            {% for d in drones %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">维护类型</label>
+          <select name="type" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+            {% for k, v in maintenance_type_label.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">计划日期</label>
+          <input type="date" name="scheduled_date" required class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">技术人员</label>
+          <input type="text" name="technician" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">预估费用(¥)</label>
+        <input type="number" name="cost" value="0" min="0" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">描述</label>
+        <textarea name="description" rows="2" required class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none"></textarea>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white transition">取消</button>
+        <button type="submit" class="bg-drone-accent hover:bg-cyan-400 text-drone-dark px-4 py-2 rounded-lg text-sm font-medium transition">创建计划</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

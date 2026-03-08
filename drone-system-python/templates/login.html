@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}登录 - 无人机作业管理系统{% endblock %}
+
+{% block fullpage %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-drone-dark via-[#0d1b2a] to-[#1a1a2e] relative overflow-hidden">
+  <!-- 背景装饰 -->
+  <div class="absolute inset-0 opacity-10">
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-drone-accent/20 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="glass-card rounded-2xl p-8 w-full max-w-md mx-4 relative z-10">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-drone-accent/10 mb-4">
+        <svg class="w-10 h-10 text-drone-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-drone-accent neon-text">无人机作业管理系统</h1>
+      <p class="text-gray-500 text-sm mt-1">UAV Operations Management System</p>
+    </div>
+
+    <!-- 登录表单 -->
+    <form method="POST" class="space-y-5">
+      {% if error %}
+      <div class="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+        {{ error }}
+      </div>
+      {% endif %}
+
+      <div>
+        <label class="block text-sm text-gray-400 mb-1.5">用户名</label>
+        <input type="text" name="username" required
+          class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-4 py-2.5 text-gray-200 focus:border-drone-accent focus:outline-none focus:ring-1 focus:ring-drone-accent/50 transition"
+          placeholder="请输入用户名">
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1.5">密码</label>
+        <input type="password" name="password" required
+          class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-4 py-2.5 text-gray-200 focus:border-drone-accent focus:outline-none focus:ring-1 focus:ring-drone-accent/50 transition"
+          placeholder="请输入密码">
+      </div>
+
+      <button type="submit"
+        class="w-full bg-drone-accent hover:bg-cyan-400 text-drone-dark font-semibold py-2.5 rounded-lg transition transform hover:scale-[1.02]">
+        登 录
+      </button>
+    </form>
+
+    <!-- 演示账号 -->
+    <div class="mt-6 pt-5 border-t border-drone-border">
+      <p class="text-xs text-gray-500 mb-3 text-center">快速登录（演示账号）</p>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="fillLogin('admin','admin123')" class="text-xs bg-drone-dark/50 hover:bg-drone-accent/10 border border-drone-border rounded-lg px-3 py-2 text-gray-400 hover:text-drone-accent transition">
+          管理员 admin
+        </button>
+        <button onclick="fillLogin('operator1','password')" class="text-xs bg-drone-dark/50 hover:bg-drone-accent/10 border border-drone-border rounded-lg px-3 py-2 text-gray-400 hover:text-drone-accent transition">
+          操作员 operator1
+        </button>
+        <button onclick="fillLogin('operator2','password')" class="text-xs bg-drone-dark/50 hover:bg-drone-accent/10 border border-drone-border rounded-lg px-3 py-2 text-gray-400 hover:text-drone-accent transition">
+          操作员 operator2
+        </button>
+        <button onclick="fillLogin('viewer1','password')" class="text-xs bg-drone-dark/50 hover:bg-drone-accent/10 border border-drone-border rounded-lg px-3 py-2 text-gray-400 hover:text-drone-accent transition">
+          观察者 viewer1
+        </button>
+      </div>
+    </div>
+
+    <!-- 版本信息 -->
+    <div class="mt-4 text-center text-xs text-gray-600">
+      v2.5.0 · Python Flask 版
+    </div>
+  </div>
+</div>
+
+<script>
+function fillLogin(username, password) {
+  document.querySelector('input[name="username"]').value = username;
+  document.querySelector('input[name="password"]').value = password;
+}
+</script>
+{% endblock %}
