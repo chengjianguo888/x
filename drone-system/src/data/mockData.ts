@@ -188,3 +188,14 @@ export const dronePerformanceData = [
   { name: '天鹰-03', flights: 30, hours: 61.8, efficiency: 82 },
   { name: '侦察鹰-01', flights: 22, hours: 45.1, efficiency: 91 },
 ];
+
+export const flightTrendDataMonth = [
+  { date: '02-01', flights: 18, hours: 38.5, dataGB: 28.3 },
+  { date: '02-05', flights: 22, hours: 44.2, dataGB: 34.7 },
+  { date: '02-10', flights: 16, hours: 35.8, dataGB: 26.2 },
+  { date: '02-15', flights: 25, hours: 52.1, dataGB: 40.5 },
+  { date: '02-20', flights: 20, hours: 42.4, dataGB: 32.8 },
+  { date: '02-25', flights: 19, hours: 39.6, dataGB: 30.1 },
+  { date: '03-01', flights: 23, hours: 48.3, dataGB: 36.6 },
+  { date: '03-08', flights: 17, hours: 34.2, dataGB: 25.3 },
+];

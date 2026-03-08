@@ -89,6 +89,7 @@ export interface FlightData {
   gpsAccuracy: number;
   imagesCaptured?: number;
   dataSize?: number;
+  droneName?: string;
 }
 
 export interface Alert {

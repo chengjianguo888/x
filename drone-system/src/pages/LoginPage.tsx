@@ -166,7 +166,7 @@ export default function LoginPage() {
               </svg>
             </div>
           </div>
-          <h1 className="text-2xl font-bold neon-text tracking-wider" style={{ fontFamily: 'Orbitron, sans-serif', color: '#00d4ff' }}>
+          <h1 className="text-2xl font-bold neon-text tracking-wider" style={{ fontFamily: "Orbitron, 'Noto Sans SC', sans-serif", color: '#00d4ff' }}>
             无人机作业管理系统
           </h1>
           <p className="text-slate-400 text-sm mt-1 tracking-widest">UAV OPERATION DATA SYSTEM</p>

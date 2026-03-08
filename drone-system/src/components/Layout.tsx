@@ -81,7 +81,7 @@ export default function Layout() {
           </div>
           {!collapsed && (
             <div className="min-w-0 overflow-hidden">
-              <div className="text-cyan-400 font-bold text-sm truncate" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+              <div className="text-cyan-400 font-bold text-sm truncate" style={{ fontFamily: "Orbitron, 'Noto Sans SC', sans-serif" }}>
                 无人机系统
               </div>
               <div className="text-slate-500 text-xs truncate">UAV OPS SYSTEM</div>

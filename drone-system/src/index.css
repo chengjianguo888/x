@@ -1,4 +1,14 @@
+/* Google Fonts as progressive enhancement - falls back to local font if blocked */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap');
+
+/* Local CJK font subset for offline/blocked environments */
+@font-face {
+  font-family: 'Noto Sans SC';
+  src: url('/fonts/NotoSansSC-subset.ttf') format('truetype');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -18,7 +28,8 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  /* 'Noto Sans SC' loads from local /fonts/ - always works even without internet */
+  font-family: 'Inter', 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   background-color: var(--bg-dark);
   color: #e2e8f0;
   overflow-x: hidden;

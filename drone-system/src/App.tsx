@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { StoreProvider } from './hooks/useStore';
 import Layout from './components/Layout';
+import ToastContainer from './components/ToastContainer';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import MonitorPage from './pages/MonitorPage';
@@ -50,7 +52,10 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <StoreProvider>
+          <AppRoutes />
+          <ToastContainer />
+        </StoreProvider>
       </AuthProvider>
     </BrowserRouter>
   );

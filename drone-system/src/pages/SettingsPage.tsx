@@ -1,383 +1,300 @@
 import { useState } from 'react';
-import { Settings, Bell, Shield, Globe, Database, Wifi, Save, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Settings, Bell, Shield, Database, Wifi, RotateCcw, Save, CheckCircle } from 'lucide-react';
+import { useStore } from '../hooks/useStore';
 
-const settingSections = [
-  { id: 'general', label: '基本设置', icon: Settings },
-  { id: 'notifications', label: '通知设置', icon: Bell },
-  { id: 'security', label: '安全设置', icon: Shield },
-  { id: 'data', label: '数据设置', icon: Database },
-  { id: 'network', label: '网络设置', icon: Wifi },
-];
+const defaultSettings = {
+  systemName: '无人机作业管理系统',
+  timezone: 'Asia/Shanghai (UTC+8)',
+  language: '简体中文',
+  autoSave: true,
+  darkMode: true,
+  compactMode: false,
+  emailAlerts: true,
+  smsAlerts: false,
+  pushAlerts: true,
+  alertBattery: true,
+  alertMaintenance: true,
+  alertMission: true,
+  twoFactor: false,
+  sessionTimeout: 30,
+  loginAttempts: 5,
+  retentionDays: 90,
+  autoBackup: true,
+  backupInterval: 24,
+  compressionEnabled: true,
+  apiServer: 'https://api.drone.local:8443',
+  dataServer: 'https://data.drone.local:9000',
+  socketPort: 8765,
+  networkTimeout: 30,
+};
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button
-      onClick={() => onChange(!checked)}
-      className={`relative w-11 h-6 rounded-full transition-all duration-300 ${checked ? 'bg-cyan-500' : 'bg-slate-700'}`}
-    >
-      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300 ${checked ? 'left-6' : 'left-1'}`} />
+    <button onClick={() => onChange(!value)}
+      className={`relative w-10 h-5 rounded-full transition-all duration-300 flex-shrink-0 ${value ? 'bg-cyan-500' : 'bg-slate-700'}`}>
+      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all duration-300 ${value ? 'left-5' : 'left-0.5'}`} />
     </button>
   );
 }
 
+function Slider({ value, min, max, onChange, unit = '' }: { value: number; min: number; max: number; onChange: (v: number) => void; unit?: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <input type="range" min={min} max={max} value={value} onChange={e => onChange(Number(e.target.value))}
+        className="flex-1 accent-cyan-500 h-1.5 cursor-pointer" />
+      <span className="text-cyan-400 text-sm font-medium w-14 text-right">{value}{unit}</span>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState('general');
+  const { showToast } = useStore();
+  const [activeTab, setActiveTab] = useState('general');
+  const [settings, setSettings] = useState(defaultSettings);
+  const [testStatus, setTestStatus] = useState<Record<string, 'idle' | 'testing' | 'ok' | 'fail'>>({
+    api: 'idle', data: 'idle', socket: 'idle'
+  });
   const [saved, setSaved] = useState(false);
 
-  // Settings state
-  const [settings, setSettings] = useState({
-    systemName: '无人机作业管理系统',
-    timezone: 'Asia/Shanghai',
-    language: 'zh-CN',
-    autoSave: true,
-    darkMode: true,
-    compactMode: false,
-
-    emailNotify: true,
-    smsNotify: false,
-    pushNotify: true,
-    alertSound: true,
-    lowBatteryThreshold: 20,
-    windSpeedAlert: 12,
-    offlineAlert: true,
-    missionCompleteNotify: true,
-
-    sessionTimeout: 60,
-    twoFactor: false,
-    loginHistory: true,
-    ipWhitelist: false,
-    dataEncryption: true,
-    auditLog: true,
-
-    retentionDays: 90,
-    autoBackup: true,
-    backupInterval: 24,
-    maxStorageGB: 500,
-    compressionEnabled: true,
-    autoCleanup: false,
-
-    apiEndpoint: 'wss://api.drone-ops.com/ws',
-    dataFrequency: 2,
-    timeout: 30,
-    maxRetries: 3,
-    useProxy: false,
-    proxyAddress: '',
-  });
-
-  const update = (key: string, value: unknown) => setSettings(prev => ({ ...prev, [key]: value }));
+  const set = <K extends keyof typeof defaultSettings>(key: K, value: typeof defaultSettings[K]) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    setSaved(false);
+  };
 
   const handleSave = () => {
     setSaved(true);
+    showToast('success', '系统设置已保存');
     setTimeout(() => setSaved(false), 3000);
   };
 
+  const handleReset = () => {
+    if (confirm('确定要将所有设置恢复为默认值吗？')) {
+      setSettings(defaultSettings);
+      setSaved(false);
+      showToast('info', '设置已恢复为默认值');
+    }
+  };
+
+  const handleTestConnection = (type: string) => {
+    setTestStatus(prev => ({ ...prev, [type]: 'testing' }));
+    showToast('info', `正在测试${type === 'api' ? 'API' : '数据'}服务器连接...`);
+    setTimeout(() => {
+      const ok = Math.random() > 0.3;
+      setTestStatus(prev => ({ ...prev, [type]: ok ? 'ok' : 'fail' }));
+      showToast(ok ? 'success' : 'error', ok ? `服务器连接正常，延迟 ${Math.floor(Math.random() * 30 + 5)}ms` : '连接失败，请检查服务器地址和网络');
+    }, 1500);
+  };
+
+  const tabs = [
+    { key: 'general', label: '基本设置', icon: Settings },
+    { key: 'notifications', label: '通知设置', icon: Bell },
+    { key: 'security', label: '安全设置', icon: Shield },
+    { key: 'data', label: '数据设置', icon: Database },
+    { key: 'network', label: '网络设置', icon: Wifi },
+  ];
+
   return (
-    <div className="p-4 lg:p-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+    <div className="p-4 lg:p-6 space-y-5 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div>
           <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-            <Settings className="text-cyan-400 w-5 h-5" />
-            系统设置
+            <Settings className="text-cyan-400 w-5 h-5" />系统设置
           </h1>
           <p className="text-slate-500 text-sm">配置系统参数和偏好设置</p>
         </div>
         <div className="sm:ml-auto flex gap-2">
-          <button className="flex items-center gap-2 bg-drone-card border border-drone-border text-slate-400 hover:text-slate-200 px-4 py-2.5 rounded-lg text-sm transition-all">
-            <RefreshCw className="w-4 h-4" />
-            重置默认
+          <button onClick={handleReset} className="flex items-center gap-2 bg-drone-card border border-drone-border text-slate-400 hover:text-red-400 hover:border-red-400/30 px-4 py-2.5 rounded-lg text-sm transition-all">
+            <RotateCcw className="w-4 h-4" />重置默认
           </button>
-          <button
-            onClick={handleSave}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all font-medium ${
-              saved ? 'bg-green-500 text-white' : 'bg-cyan-500 hover:bg-cyan-400 text-white shadow-glow-cyan'
-            }`}
-          >
+          <button onClick={handleSave} className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm transition-all font-medium ${saved ? 'bg-green-500 text-white' : 'bg-cyan-500 hover:bg-cyan-400 text-white shadow-glow-cyan'}`}>
             {saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
             {saved ? '已保存' : '保存设置'}
           </button>
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Section tabs */}
-        <div className="lg:w-48 flex-shrink-0">
-          <nav className="space-y-1">
-            {settingSections.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => setActiveSection(id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left
-                  ${activeSection === id ? 'bg-cyan-400/10 border border-cyan-400/30 text-cyan-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/30'}`}
-              >
-                <Icon className="w-4 h-4 flex-shrink-0" />
-                {label}
+      <div className="flex gap-6 flex-col lg:flex-row">
+        {/* Tab nav */}
+        <nav className="flex lg:flex-col gap-1 flex-wrap lg:flex-nowrap lg:w-44 flex-shrink-0">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all text-left ${activeTab === tab.key ? 'bg-cyan-400/20 text-cyan-400 border border-cyan-400/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'}`}>
+                <Icon className="w-4 h-4 flex-shrink-0" />{tab.label}
               </button>
-            ))}
-          </nav>
-        </div>
+            );
+          })}
+        </nav>
 
-        {/* Settings content */}
-        <div className="flex-1 space-y-4">
-          {activeSection === 'general' && (
-            <div className="glass-card rounded-xl p-6 space-y-5">
-              <h2 className="text-slate-200 font-semibold border-b border-drone-border pb-3">基本设置</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        {/* Content */}
+        <div className="flex-1 glass-card rounded-xl p-6 space-y-6">
+          {activeTab === 'general' && (
+            <div className="space-y-5">
+              <h2 className="text-slate-200 font-semibold text-base border-b border-drone-border pb-2">基本设置</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-slate-400 text-sm mb-2 block">系统名称</label>
-                  <input
-                    type="text"
-                    value={settings.systemName}
-                    onChange={e => update('systemName', e.target.value)}
-                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-cyan-400/50"
-                  />
+                  <label className="text-slate-400 text-sm mb-1.5 block">系统名称</label>
+                  <input type="text" value={settings.systemName} onChange={e => set('systemName', e.target.value)}
+                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-cyan-400/50" />
                 </div>
                 <div>
-                  <label className="text-slate-400 text-sm mb-2 block">时区设置</label>
-                  <select
-                    value={settings.timezone}
-                    onChange={e => update('timezone', e.target.value)}
-                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-300 text-sm focus:outline-none focus:border-cyan-400/50"
-                  >
-                    <option value="Asia/Shanghai">Asia/Shanghai (UTC+8)</option>
-                    <option value="UTC">UTC</option>
-                    <option value="America/New_York">America/New_York</option>
+                  <label className="text-slate-400 text-sm mb-1.5 block">时区设置</label>
+                  <select value={settings.timezone} onChange={e => set('timezone', e.target.value)}
+                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-300 text-sm focus:outline-none focus:border-cyan-400/50 cursor-pointer">
+                    <option>Asia/Shanghai (UTC+8)</option>
+                    <option>UTC</option>
+                    <option>America/New_York</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-slate-400 text-sm mb-2 block">界面语言</label>
-                  <select
-                    value={settings.language}
-                    onChange={e => update('language', e.target.value)}
-                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-300 text-sm focus:outline-none focus:border-cyan-400/50"
-                  >
-                    <option value="zh-CN">简体中文</option>
-                    <option value="en-US">English</option>
+                  <label className="text-slate-400 text-sm mb-1.5 block">界面语言</label>
+                  <select value={settings.language} onChange={e => set('language', e.target.value)}
+                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-300 text-sm focus:outline-none focus:border-cyan-400/50 cursor-pointer">
+                    <option>简体中文</option>
+                    <option>English</option>
                   </select>
                 </div>
               </div>
-              <div className="space-y-4 pt-2">
+              <div className="space-y-3">
                 {[
-                  { key: 'autoSave', label: '自动保存', desc: '每次操作后自动保存配置' },
-                  { key: 'darkMode', label: '深色模式', desc: '使用深色界面主题' },
-                  { key: 'compactMode', label: '紧凑模式', desc: '减少界面间距，显示更多内容' },
-                ].map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-center justify-between py-2">
+                  { key: 'autoSave' as const, label: '自动保存', desc: '每次操作后自动保存配置' },
+                  { key: 'darkMode' as const, label: '深色模式', desc: '使用深色界面主题' },
+                  { key: 'compactMode' as const, label: '紧凑模式', desc: '减少界面间距，显示更多内容' },
+                ].map(item => (
+                  <div key={item.key} className="flex items-center justify-between p-3 bg-slate-900/40 rounded-lg">
                     <div>
-                      <div className="text-slate-300 text-sm font-medium">{label}</div>
-                      <div className="text-slate-500 text-xs">{desc}</div>
+                      <div className="text-slate-200 text-sm">{item.label}</div>
+                      <div className="text-slate-500 text-xs">{item.desc}</div>
                     </div>
-                    <Toggle checked={settings[key as keyof typeof settings] as boolean} onChange={v => update(key, v)} />
+                    <Toggle value={settings[item.key]} onChange={v => set(item.key, v)} />
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {activeSection === 'notifications' && (
-            <div className="glass-card rounded-xl p-6 space-y-5">
-              <h2 className="text-slate-200 font-semibold border-b border-drone-border pb-3">通知设置</h2>
-              <div className="space-y-4">
+          {activeTab === 'notifications' && (
+            <div className="space-y-5">
+              <h2 className="text-slate-200 font-semibold text-base border-b border-drone-border pb-2">通知设置</h2>
+              <div className="space-y-2">
+                <p className="text-slate-400 text-sm font-medium">通知渠道</p>
                 {[
-                  { key: 'emailNotify', label: '邮件通知', desc: '重要事件通过邮件通知' },
-                  { key: 'smsNotify', label: '短信通知', desc: '紧急告警通过短信通知' },
-                  { key: 'pushNotify', label: '推送通知', desc: '浏览器推送通知' },
-                  { key: 'alertSound', label: '告警音效', desc: '收到告警时播放提示音' },
-                  { key: 'offlineAlert', label: '设备离线告警', desc: '设备离线时立即通知' },
-                  { key: 'missionCompleteNotify', label: '任务完成通知', desc: '任务完成时发送通知' },
-                ].map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-center justify-between py-2 border-b border-drone-border/50 last:border-0">
-                    <div>
-                      <div className="text-slate-300 text-sm font-medium">{label}</div>
-                      <div className="text-slate-500 text-xs">{desc}</div>
-                    </div>
-                    <Toggle checked={settings[key as keyof typeof settings] as boolean} onChange={v => update(key, v)} />
+                  { key: 'emailAlerts' as const, label: '邮件通知', desc: '通过电子邮件接收告警' },
+                  { key: 'smsAlerts' as const, label: '短信通知', desc: '通过短信接收紧急告警' },
+                  { key: 'pushAlerts' as const, label: '推送通知', desc: '浏览器桌面推送通知' },
+                ].map(item => (
+                  <div key={item.key} className="flex items-center justify-between p-3 bg-slate-900/40 rounded-lg">
+                    <div><div className="text-slate-200 text-sm">{item.label}</div><div className="text-slate-500 text-xs">{item.desc}</div></div>
+                    <Toggle value={settings[item.key]} onChange={v => set(item.key, v)} />
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-5 pt-2">
-                <div>
-                  <label className="text-slate-400 text-sm mb-2 block">低电量告警阈值 (%)</label>
-                  <input
-                    type="range" min={5} max={50} step={5}
-                    value={settings.lowBatteryThreshold}
-                    onChange={e => update('lowBatteryThreshold', parseInt(e.target.value))}
-                    className="w-full"
-                  />
-                  <div className="text-cyan-400 text-sm mt-1 text-center font-mono">{settings.lowBatteryThreshold}%</div>
-                </div>
-                <div>
-                  <label className="text-slate-400 text-sm mb-2 block">风速告警阈值 (m/s)</label>
-                  <input
-                    type="range" min={5} max={20} step={1}
-                    value={settings.windSpeedAlert}
-                    onChange={e => update('windSpeedAlert', parseInt(e.target.value))}
-                    className="w-full"
-                  />
-                  <div className="text-cyan-400 text-sm mt-1 text-center font-mono">{settings.windSpeedAlert} m/s</div>
-                </div>
+              <div className="space-y-2">
+                <p className="text-slate-400 text-sm font-medium">告警类型</p>
+                {[
+                  { key: 'alertBattery' as const, label: '电量告警', desc: '电池电量低于阈值时通知' },
+                  { key: 'alertMaintenance' as const, label: '维护到期', desc: '设备维护计划到期时通知' },
+                  { key: 'alertMission' as const, label: '任务状态', desc: '任务完成、失败、异常时通知' },
+                ].map(item => (
+                  <div key={item.key} className="flex items-center justify-between p-3 bg-slate-900/40 rounded-lg">
+                    <div><div className="text-slate-200 text-sm">{item.label}</div><div className="text-slate-500 text-xs">{item.desc}</div></div>
+                    <Toggle value={settings[item.key]} onChange={v => set(item.key, v)} />
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {activeSection === 'security' && (
-            <div className="glass-card rounded-xl p-6 space-y-5">
-              <h2 className="text-slate-200 font-semibold border-b border-drone-border pb-3">安全设置</h2>
-              <div className="space-y-4">
+          {activeTab === 'security' && (
+            <div className="space-y-5">
+              <h2 className="text-slate-200 font-semibold text-base border-b border-drone-border pb-2">安全设置</h2>
+              <div className="flex items-center justify-between p-3 bg-slate-900/40 rounded-lg">
+                <div>
+                  <div className="text-slate-200 text-sm">双因素认证 (2FA)</div>
+                  <div className="text-slate-500 text-xs">登录时需要验证码</div>
+                </div>
+                <Toggle value={settings.twoFactor} onChange={v => { set('twoFactor', v); showToast(v ? 'success' : 'info', v ? '双因素认证已启用' : '双因素认证已关闭'); }} />
+              </div>
+              <div className="p-3 bg-slate-900/40 rounded-lg">
+                <div className="text-slate-200 text-sm mb-3">会话超时时间</div>
+                <Slider value={settings.sessionTimeout} min={5} max={120} onChange={v => set('sessionTimeout', v)} unit=" 分钟" />
+              </div>
+              <div className="p-3 bg-slate-900/40 rounded-lg">
+                <div className="text-slate-200 text-sm mb-3">最大登录失败次数</div>
+                <Slider value={settings.loginAttempts} min={3} max={10} onChange={v => set('loginAttempts', v)} unit=" 次" />
+              </div>
+              <button onClick={() => showToast('success', '密码修改链接已发送至您的邮箱')}
+                className="w-full py-2.5 bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/20 rounded-lg text-sm transition-all">
+                修改登录密码
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'data' && (
+            <div className="space-y-5">
+              <h2 className="text-slate-200 font-semibold text-base border-b border-drone-border pb-2">数据设置</h2>
+              <div className="p-3 bg-slate-900/40 rounded-lg">
+                <div className="text-slate-200 text-sm mb-3">数据保留天数</div>
+                <Slider value={settings.retentionDays} min={30} max={365} onChange={v => set('retentionDays', v)} unit=" 天" />
+              </div>
+              <div className="space-y-2">
                 {[
-                  { key: 'twoFactor', label: '双因素认证', desc: '启用两步验证提高账号安全性' },
-                  { key: 'loginHistory', label: '登录历史记录', desc: '记录所有登录操作' },
-                  { key: 'ipWhitelist', label: 'IP白名单', desc: '仅允许白名单IP访问系统' },
-                  { key: 'dataEncryption', label: '数据传输加密', desc: '所有数据传输使用TLS加密' },
-                  { key: 'auditLog', label: '操作审计日志', desc: '记录所有用户操作行为' },
-                ].map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-center justify-between py-2 border-b border-drone-border/50 last:border-0">
-                    <div>
-                      <div className="text-slate-300 text-sm font-medium">{label}</div>
-                      <div className="text-slate-500 text-xs">{desc}</div>
-                    </div>
-                    <Toggle checked={settings[key as keyof typeof settings] as boolean} onChange={v => update(key, v)} />
+                  { key: 'autoBackup' as const, label: '自动备份', desc: '定时自动备份系统数据' },
+                  { key: 'compressionEnabled' as const, label: '数据压缩', desc: '压缩存储数据以节省空间' },
+                ].map(item => (
+                  <div key={item.key} className="flex items-center justify-between p-3 bg-slate-900/40 rounded-lg">
+                    <div><div className="text-slate-200 text-sm">{item.label}</div><div className="text-slate-500 text-xs">{item.desc}</div></div>
+                    <Toggle value={settings[item.key]} onChange={v => set(item.key, v)} />
                   </div>
                 ))}
               </div>
+              {settings.autoBackup && (
+                <div className="p-3 bg-slate-900/40 rounded-lg">
+                  <div className="text-slate-200 text-sm mb-3">备份间隔</div>
+                  <Slider value={settings.backupInterval} min={1} max={72} onChange={v => set('backupInterval', v)} unit=" 小时" />
+                </div>
+              )}
+              <button onClick={() => { showToast('info', '正在手动备份数据...'); setTimeout(() => showToast('success', `数据备份完成，已保存至云端`), 2000); }}
+                className="w-full py-2.5 bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/20 rounded-lg text-sm transition-all">
+                立即手动备份
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'network' && (
+            <div className="space-y-5">
+              <h2 className="text-slate-200 font-semibold text-base border-b border-drone-border pb-2">网络设置</h2>
+              {[
+                { field: 'apiServer' as const, label: 'API 服务器地址', testKey: 'api' },
+                { field: 'dataServer' as const, label: '数据服务器地址', testKey: 'data' },
+              ].map(({ field, label, testKey }) => (
+                <div key={field}>
+                  <label className="text-slate-400 text-sm mb-1.5 block">{label}</label>
+                  <div className="flex gap-2">
+                    <input type="text" value={settings[field]} onChange={e => set(field, e.target.value)}
+                      className="flex-1 bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-cyan-400/50 font-mono text-xs" />
+                    <button onClick={() => handleTestConnection(testKey)}
+                      disabled={testStatus[testKey] === 'testing'}
+                      className={`px-3 py-2 rounded-lg text-xs transition-all border font-medium flex-shrink-0 ${
+                        testStatus[testKey] === 'ok' ? 'border-green-400/40 text-green-400 bg-green-400/10' :
+                        testStatus[testKey] === 'fail' ? 'border-red-400/40 text-red-400 bg-red-400/10' :
+                        testStatus[testKey] === 'testing' ? 'border-yellow-400/40 text-yellow-400 bg-yellow-400/10' :
+                        'border-drone-border text-slate-400 hover:border-cyan-400/40 hover:text-cyan-400'
+                      } disabled:cursor-not-allowed`}>
+                      {testStatus[testKey] === 'testing' ? '测试中...' : testStatus[testKey] === 'ok' ? '✓ 正常' : testStatus[testKey] === 'fail' ? '✗ 失败' : '测试连接'}
+                    </button>
+                  </div>
+                </div>
+              ))}
               <div>
-                <label className="text-slate-400 text-sm mb-2 block">会话超时时间 (分钟)</label>
-                <input
-                  type="range" min={15} max={240} step={15}
-                  value={settings.sessionTimeout}
-                  onChange={e => update('sessionTimeout', parseInt(e.target.value))}
-                  className="w-full"
-                />
-                <div className="text-cyan-400 text-sm mt-1 text-center font-mono">{settings.sessionTimeout} 分钟</div>
+                <label className="text-slate-400 text-sm mb-1.5 block">WebSocket 端口</label>
+                <input type="number" value={settings.socketPort} onChange={e => set('socketPort', Number(e.target.value))}
+                  className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-cyan-400/50" />
               </div>
-              <div className="flex items-start gap-2 bg-yellow-400/5 border border-yellow-400/20 rounded-lg p-3 mt-2">
-                <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
-                <p className="text-slate-400 text-xs">启用双因素认证需要在移动设备上安装认证器应用（如Google Authenticator）。</p>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'data' && (
-            <div className="glass-card rounded-xl p-6 space-y-5">
-              <h2 className="text-slate-200 font-semibold border-b border-drone-border pb-3">数据设置</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="text-slate-400 text-sm mb-2 block">数据保留天数</label>
-                  <input
-                    type="number"
-                    value={settings.retentionDays}
-                    onChange={e => update('retentionDays', parseInt(e.target.value))}
-                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-cyan-400/50"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-400 text-sm mb-2 block">备份间隔 (小时)</label>
-                  <input
-                    type="number"
-                    value={settings.backupInterval}
-                    onChange={e => update('backupInterval', parseInt(e.target.value))}
-                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-cyan-400/50"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-400 text-sm mb-2 block">最大存储空间 (GB)</label>
-                  <input
-                    type="number"
-                    value={settings.maxStorageGB}
-                    onChange={e => update('maxStorageGB', parseInt(e.target.value))}
-                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-cyan-400/50"
-                  />
-                </div>
-              </div>
-              <div className="space-y-4 pt-2">
-                {[
-                  { key: 'autoBackup', label: '自动备份', desc: '按设定间隔自动备份数据' },
-                  { key: 'compressionEnabled', label: '数据压缩', desc: '存储时自动压缩数据以节省空间' },
-                  { key: 'autoCleanup', label: '自动清理', desc: '超过保留期限的数据自动清理' },
-                ].map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-center justify-between py-2 border-b border-drone-border/50 last:border-0">
-                    <div>
-                      <div className="text-slate-300 text-sm font-medium">{label}</div>
-                      <div className="text-slate-500 text-xs">{desc}</div>
-                    </div>
-                    <Toggle checked={settings[key as keyof typeof settings] as boolean} onChange={v => update(key, v)} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'network' && (
-            <div className="glass-card rounded-xl p-6 space-y-5">
-              <h2 className="text-slate-200 font-semibold border-b border-drone-border pb-3">网络设置</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-slate-400 text-sm mb-2 block">数据接收服务地址</label>
-                  <input
-                    type="text"
-                    value={settings.apiEndpoint}
-                    onChange={e => update('apiEndpoint', e.target.value)}
-                    className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-cyan-400/50 font-mono"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-slate-400 text-sm mb-2 block">数据频率 (秒)</label>
-                    <input
-                      type="range" min={1} max={10} step={1}
-                      value={settings.dataFrequency}
-                      onChange={e => update('dataFrequency', parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="text-cyan-400 text-xs mt-1 text-center font-mono">{settings.dataFrequency}s</div>
-                  </div>
-                  <div>
-                    <label className="text-slate-400 text-sm mb-2 block">超时时间 (秒)</label>
-                    <input
-                      type="range" min={5} max={60} step={5}
-                      value={settings.timeout}
-                      onChange={e => update('timeout', parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="text-cyan-400 text-xs mt-1 text-center font-mono">{settings.timeout}s</div>
-                  </div>
-                  <div>
-                    <label className="text-slate-400 text-sm mb-2 block">最大重试次数</label>
-                    <input
-                      type="range" min={0} max={10} step={1}
-                      value={settings.maxRetries}
-                      onChange={e => update('maxRetries', parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="text-cyan-400 text-xs mt-1 text-center font-mono">{settings.maxRetries}次</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <div>
-                    <div className="text-slate-300 text-sm font-medium">使用代理服务器</div>
-                    <div className="text-slate-500 text-xs">通过代理服务器连接</div>
-                  </div>
-                  <Toggle checked={settings.useProxy} onChange={v => update('useProxy', v)} />
-                </div>
-                {settings.useProxy && (
-                  <div className="animate-fade-in">
-                    <label className="text-slate-400 text-sm mb-2 block">代理服务器地址</label>
-                    <input
-                      type="text"
-                      value={settings.proxyAddress}
-                      onChange={e => update('proxyAddress', e.target.value)}
-                      placeholder="例: http://proxy.example.com:8080"
-                      className="w-full bg-slate-900/60 border border-drone-border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-600 text-sm focus:outline-none focus:border-cyan-400/50 font-mono"
-                    />
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-4">
-                <button className="flex items-center gap-2 bg-green-400/10 border border-green-400/30 text-green-400 hover:bg-green-400/20 px-4 py-2 rounded-lg text-sm transition-all">
-                  <Wifi className="w-4 h-4" />
-                  测试连接
-                </button>
-                <Globe className="w-4 h-4 text-slate-500" />
-                <span className="text-slate-500 text-xs">上次连接成功: 2026-03-08 11:45:32</span>
+              <div className="p-3 bg-slate-900/40 rounded-lg">
+                <div className="text-slate-200 text-sm mb-3">网络超时时间</div>
+                <Slider value={settings.networkTimeout} min={5} max={120} onChange={v => set('networkTimeout', v)} unit=" 秒" />
               </div>
             </div>
           )}
