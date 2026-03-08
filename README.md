@@ -1,8 +1,53 @@
 # 无人机作业管理系统 (UAV OPS)
 
-一个基于 React + TypeScript + Vite 构建的无人机作业管理系统，提供无人机机队管理、飞行任务调度、实时监控、数据采集分析、维护记录跟踪等功能。
+无人机作业管理系统，提供机队管理、飞行任务调度、实时监控、数据采集分析、维护记录跟踪等功能。
 
-## 快速开始
+本仓库包含两个版本：
+
+| 版本 | 目录 | 技术栈 | 说明 |
+|------|------|--------|------|
+| **Python 版（推荐）** | `drone-system-python/` | Python + Flask | 只需安装 Python，运行简单 |
+| React 版 | `drone-system/` | React + TypeScript + Vite | 需要 Node.js 环境 |
+
+---
+
+## Python 版 — 快速开始
+
+### 环境要求
+
+- [Python](https://www.python.org/downloads/) >= 3.10
+
+### 安装与运行
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/chengjianguo888/x.git
+cd x
+
+# 2. 进入 Python 版目录
+cd drone-system-python
+
+# 3. 安装依赖
+pip install -r requirements.txt
+
+# 4. 启动
+python app.py
+```
+
+启动后在浏览器打开 **http://localhost:5000**。
+
+### 登录账号
+
+| 用户名 | 密码 | 角色 | 说明 |
+|--------|------|------|------|
+| `admin` | `admin123` | 管理员 | 拥有全部权限 |
+| `operator1` | `password` | 操作员 | 飞行作业人员 |
+| `operator2` | `password` | 操作员 | 飞行作业人员 |
+| `viewer1` | `password` | 观察者 | 仅查看数据 |
+
+---
+
+## React 版 — 快速开始
 
 ### 环境要求
 
@@ -12,40 +57,14 @@
 ### 安装与运行
 
 ```bash
-# 1. 克隆仓库
-git clone https://github.com/chengjianguo888/x.git
-cd x
-
-# 2. 进入项目目录
 cd drone-system
-
-# 3. 安装依赖
 npm install
-
-# 4. 启动开发服务器
 npm run dev
 ```
 
-启动后，在浏览器中打开终端提示的地址（默认为 http://localhost:5173）。
+启动后在浏览器打开终端提示的地址（默认 http://localhost:5173），登录账号同上。
 
-### 登录账号
-
-系统使用模拟数据，可使用以下账号登录：
-
-| 用户名 | 密码 | 角色 | 说明 |
-|--------|------|------|------|
-| `admin` | `admin123` | 管理员 | 拥有全部权限 |
-| `operator1` | `password` | 操作员 | 飞行作业人员 |
-| `operator2` | `password` | 操作员 | 飞行作业人员 |
-| `viewer1` | `password` | 观察者 | 仅查看数据 |
-
-### 构建生产版本
-
-```bash
-cd drone-system
-npm run build      # 构建产物输出到 drone-system/dist/
-npm run preview    # 本地预览生产版本
-```
+---
 
 ## 功能模块
 
@@ -61,14 +80,6 @@ npm run preview    # 本地预览生产版本
 | 用户管理 | `/users` | 用户增删改查与角色分配 |
 | 系统设置 | `/settings` | 通知、安全、网络、数据保留等配置 |
 
-## 技术栈
-
-- **React 19** — UI 框架
-- **TypeScript** — 类型安全
-- **Vite** — 构建工具
-- **Tailwind CSS** — 样式
-- **Recharts** — 图表
-- **Lucide React** — 图标
-- **React Router DOM** — 路由
-
-详细开发说明请参阅 [drone-system/README.md](./drone-system/README.md)。
+详细说明请参阅各版本目录下的 README：
+- [Python 版开发指南](./drone-system-python/README.md)
+- [React 版开发指南](./drone-system/README.md)
