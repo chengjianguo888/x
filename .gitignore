@@ -2,3 +2,8 @@ drone-system/node_modules/
 drone-system/dist/
 drone-system/.env
 drone-system/.env.local
+
+drone-system-python/__pycache__/
+drone-system-python/.venv/
+drone-system-python/*.pyc
+drone-system-python/.env

@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}机队管理 - 无人机作业管理系统{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <h1 class="text-xl font-bold text-white">机队管理</h1>
+    <button onclick="document.getElementById('createModal').classList.remove('hidden')"
+      class="bg-drone-accent hover:bg-cyan-400 text-drone-dark px-4 py-2 rounded-lg text-sm font-medium transition">
+      + 添加设备
+    </button>
+  </div>
+
+  <!-- 状态标签 -->
+  <div class="flex gap-2 flex-wrap">
+    {% for key, label in [('all','全部'), ('flying','飞行中'), ('idle','空闲'), ('charging','充电中'), ('maintenance','维护中'), ('offline','离线')] %}
+    <a href="?status={{ key }}&q={{ search }}"
+       class="px-3 py-1.5 rounded-lg text-sm transition {{ 'bg-drone-accent text-drone-dark font-medium' if status_filter == key else 'glass-card text-gray-400 hover:text-drone-accent' }}">
+      {{ label }}
+      {% if key != 'all' and counts.get(key) %}<span class="ml-1 text-xs opacity-75">({{ counts[key] }})</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- 搜索 -->
+  <form method="GET" class="flex gap-3">
+    <input type="hidden" name="status" value="{{ status_filter }}">
+    <input type="text" name="q" value="{{ search }}" placeholder="搜索设备名称或型号..."
+      class="flex-1 bg-drone-dark/50 border border-drone-border rounded-lg px-4 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+    <button type="submit" class="bg-drone-accent/20 hover:bg-drone-accent/30 text-drone-accent px-4 py-2 rounded-lg text-sm transition">搜索</button>
+  </form>
+
+  <!-- 无人机列表 -->
+  {% if not drones %}
+  <div class="glass-card rounded-xl p-8 text-center text-gray-500">暂无匹配的设备</div>
+  {% else %}
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    {% for d in drones %}
+    <div class="glass-card rounded-xl p-4 hover:border-drone-accent/30 transition">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <h3 class="text-sm font-medium text-white">{{ d.name }}</h3>
+          <div class="text-xs text-gray-500">{{ d.model }}</div>
+        </div>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs {{ status_color.get(d.status, 'bg-gray-500') }} text-white">
+          {{ status_label.get(d.status, d.status) }}
+        </span>
+      </div>
+
+      <!-- 电量 -->
+      <div class="mb-3">
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-gray-500">电量</span>
+          <span class="{{ 'text-red-400' if d.battery_level < 30 else 'text-yellow-400' if d.battery_level < 60 else 'text-green-400' }}">{{ d.battery_level }}%</span>
+        </div>
+        <div class="h-2 bg-gray-700 rounded-full">
+          <div class="h-full rounded-full transition-all {{ 'bg-red-500' if d.battery_level < 30 else 'bg-yellow-500' if d.battery_level < 60 else 'bg-green-500' }}" style="width: {{ d.battery_level }}%"></div>
+        </div>
+      </div>
+
+      <!-- 信息网格 -->
+      <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+        <div class="text-gray-500">总飞行时长</div>
+        <div class="text-right text-gray-300">{{ d.total_flight_hours }}h</div>
+        <div class="text-gray-500">总飞行次数</div>
+        <div class="text-right text-gray-300">{{ d.total_flights }}次</div>
+        {% if d.assigned_pilot %}
+        <div class="text-gray-500">操作员</div>
+        <div class="text-right text-gray-300">{{ d.assigned_pilot }}</div>
+        {% endif %}
+        {% if d.last_mission %}
+        <div class="text-gray-500">最后任务</div>
+        <div class="text-right text-gray-300 truncate">{{ d.last_mission }}</div>
+        {% endif %}
+        {% if d.location %}
+        <div class="text-gray-500">当前高度</div>
+        <div class="text-right text-cyan-400">{{ d.location.altitude }}m</div>
+        {% endif %}
+      </div>
+
+      <!-- 详细规格（折叠） -->
+      <details class="mb-3">
+        <summary class="text-xs text-drone-accent cursor-pointer hover:underline">查看详细规格</summary>
+        <div class="mt-2 grid grid-cols-2 gap-2 text-xs p-2 bg-drone-dark/30 rounded-lg">
+          <div class="text-gray-500">序列号</div>
+          <div class="text-right text-gray-300">{{ d.serial_number }}</div>
+          <div class="text-gray-500">购买日期</div>
+          <div class="text-right text-gray-300">{{ d.purchase_date }}</div>
+          <div class="text-gray-500">下次维护</div>
+          <div class="text-right text-gray-300">{{ d.next_maintenance_date }}</div>
+          <div class="text-gray-500">最大载荷</div>
+          <div class="text-right text-gray-300">{{ d.max_payload }}kg</div>
+          <div class="text-gray-500">最大速度</div>
+          <div class="text-right text-gray-300">{{ d.max_speed }}km/h</div>
+          <div class="text-gray-500">最大航程</div>
+          <div class="text-right text-gray-300">{{ d.max_range }}m</div>
+          <div class="text-gray-500">最大高度</div>
+          <div class="text-right text-gray-300">{{ d.max_altitude }}m</div>
+          {% if d.cameras %}
+          <div class="text-gray-500">相机</div>
+          <div class="text-right text-gray-300">{{ d.cameras | join(', ') }}</div>
+          {% endif %}
+          {% if d.sensors %}
+          <div class="text-gray-500">传感器</div>
+          <div class="text-right text-gray-300">{{ d.sensors | join(', ') }}</div>
+          {% endif %}
+        </div>
+      </details>
+
+      <!-- 操作按钮 -->
+      <div class="flex gap-2">
+        {% if d.status == 'flying' %}
+        <form method="POST" action="{{ url_for('update_drone_status', did=d.id) }}">
+          <input type="hidden" name="status" value="idle">
+          <button class="text-xs bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 px-3 py-1.5 rounded transition">📡 召回</button>
+        </form>
+        {% elif d.status == 'idle' %}
+        <form method="POST" action="{{ url_for('update_drone_status', did=d.id) }}">
+          <input type="hidden" name="status" value="flying">
+          <button class="text-xs bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 px-3 py-1.5 rounded transition">🚀 起飞</button>
+        </form>
+        {% elif d.status == 'charging' %}
+        <form method="POST" action="{{ url_for('update_drone_status', did=d.id) }}">
+          <input type="hidden" name="status" value="idle">
+          <button class="text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1.5 rounded transition">✓ 充电完成</button>
+        </form>
+        {% elif d.status in ('maintenance', 'offline') %}
+        <form method="POST" action="{{ url_for('update_drone_status', did=d.id) }}">
+          <input type="hidden" name="status" value="idle">
+          <button class="text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1.5 rounded transition">✓ 标记就绪</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- 添加设备弹窗 -->
+<div id="createModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+  <div class="glass-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-white">添加设备</h2>
+      <button onclick="document.getElementById('createModal').classList.add('hidden')" class="text-gray-500 hover:text-white">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('create_drone') }}" class="space-y-4">
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">设备名称</label>
+        <input type="text" name="name" required class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">设备型号</label>
+          <input type="text" name="model" required class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">序列号</label>
+          <input type="text" name="serial_number" required class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">最大载荷(kg)</label>
+          <input type="number" name="max_payload" step="0.1" value="0" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">最大速度(km/h)</label>
+          <input type="number" name="max_speed" value="0" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">最大航程(m)</label>
+          <input type="number" name="max_range" value="0" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">最大高度(m)</label>
+          <input type="number" name="max_altitude" value="0" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm text-gray-400 mb-1">下次维护日期</label>
+        <input type="date" name="next_maintenance_date" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white transition">取消</button>
+        <button type="submit" class="bg-drone-accent hover:bg-cyan-400 text-drone-dark px-4 py-2 rounded-lg text-sm font-medium transition">添加设备</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

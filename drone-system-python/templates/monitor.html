@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}实时监控 - 无人机作业管理系统{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <h1 class="text-xl font-bold text-white">实时监控</h1>
+
+  {% if not flying_drones %}
+  <div class="glass-card rounded-xl p-8 text-center">
+    <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <p class="text-gray-400">当前没有飞行中的无人机</p>
+  </div>
+  {% else %}
+
+  <!-- 无人机选择标签 -->
+  <div class="flex gap-2 flex-wrap">
+    {% for d in flying_drones %}
+    <a href="?drone={{ d.id }}" class="px-4 py-2 rounded-lg text-sm transition {{ 'bg-drone-accent text-drone-dark font-medium' if selected and selected.id == d.id else 'glass-card text-gray-400 hover:text-drone-accent' }}">
+      {{ d.name }}
+      <span class="ml-1 text-xs opacity-75">{{ d.battery_level }}%</span>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if selected %}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- 左列：飞行仪表 -->
+    <div class="space-y-4">
+      <!-- 姿态仪 -->
+      <div class="glass-card rounded-xl p-4">
+        <h3 class="text-sm font-medium text-gray-300 mb-3">飞行姿态</h3>
+        <div class="relative w-48 h-48 mx-auto rounded-full border-2 border-drone-border overflow-hidden bg-gradient-to-b from-sky-900 to-amber-900">
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-white">{{ selected.location.altitude if selected.location else 0 }} m</div>
+              <div class="text-xs text-gray-300">高度</div>
+            </div>
+          </div>
+          <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-amber-900/30"></div>
+          <div class="absolute top-1/2 left-0 right-0 h-px bg-white/50"></div>
+          <div class="absolute top-0 bottom-0 left-1/2 w-px bg-white/20"></div>
+        </div>
+      </div>
+
+      <!-- 实时指标 -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="glass-card rounded-xl p-3 text-center">
+          <div class="text-xs text-gray-500">高度</div>
+          <div class="text-lg font-bold text-drone-accent">{{ selected.location.altitude if selected.location else 0 }}<span class="text-xs text-gray-500">m</span></div>
+        </div>
+        <div class="glass-card rounded-xl p-3 text-center">
+          <div class="text-xs text-gray-500">速度</div>
+          <div class="text-lg font-bold text-green-400">{{ selected.speed or 0 }}<span class="text-xs text-gray-500">m/s</span></div>
+        </div>
+        <div class="glass-card rounded-xl p-3 text-center">
+          <div class="text-xs text-gray-500">电量</div>
+          <div class="text-lg font-bold {{ 'text-red-400' if selected.battery_level < 30 else 'text-yellow-400' if selected.battery_level < 60 else 'text-green-400' }}">{{ selected.battery_level }}<span class="text-xs text-gray-500">%</span></div>
+        </div>
+        <div class="glass-card rounded-xl p-3 text-center">
+          <div class="text-xs text-gray-500">信号</div>
+          <div class="text-lg font-bold text-cyan-400">{{ flight_data[-1].signal_strength if flight_data else 'N/A' }}<span class="text-xs text-gray-500">%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中列：地图/路径可视化 -->
+    <div class="glass-card rounded-xl p-4">
+      <h3 class="text-sm font-medium text-gray-300 mb-3">飞行路径</h3>
+      <div class="bg-drone-dark rounded-lg h-80 flex items-center justify-center relative overflow-hidden">
+        <svg viewBox="0 0 400 300" class="w-full h-full">
+          <!-- 网格 -->
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(26,39,68,0.5)" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="400" height="300" fill="url(#grid)"/>
+          <!-- 飞行路径 -->
+          {% if flight_data|length > 1 %}
+          <polyline fill="none" stroke="#00d4ff" stroke-width="2" opacity="0.6" points="
+            {% for fd in flight_data %}{{ (loop.index0 * 400 / (flight_data|length - 1))|round }},{{ (250 - (fd.altitude - 80) * 2)|round }} {% endfor %}
+          "/>
+          {% endif %}
+          <!-- 当前位置 -->
+          {% if flight_data %}
+          <circle cx="{{ ((flight_data|length - 1) * 400 / [flight_data|length - 1, 1]|max)|round }}" cy="{{ (250 - (flight_data[-1].altitude - 80) * 2)|round }}" r="6" fill="#00d4ff">
+            <animate attributeName="r" values="6;10;6" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          {% endif %}
+        </svg>
+        <!-- 坐标信息 -->
+        {% if selected.location %}
+        <div class="absolute bottom-2 left-2 text-xs text-gray-500 bg-drone-dark/80 rounded px-2 py-1">
+          {{ selected.location.lat }}°N, {{ selected.location.lng }}°E
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 右列：传感器 & 日志 -->
+    <div class="space-y-4">
+      <!-- 传感器数据 -->
+      <div class="glass-card rounded-xl p-4">
+        <h3 class="text-sm font-medium text-gray-300 mb-3">传感器数据</h3>
+        {% if flight_data %}
+        {% set last = flight_data[-1] %}
+        <div class="space-y-3">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">温度</span>
+            <span class="text-orange-400">{{ last.temperature }}°C</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">湿度</span>
+            <span class="text-blue-400">{{ last.humidity }}%</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">气压</span>
+            <span class="text-purple-400">{{ last.pressure }} hPa</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">GPS精度</span>
+            <span class="text-green-400">{{ last.gps_accuracy }}m</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">航向</span>
+            <span class="text-cyan-400">{{ last.heading }}°</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">俯仰角</span>
+            <span class="text-yellow-400">{{ last.pitch }}°</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">横滚角</span>
+            <span class="text-pink-400">{{ last.roll }}°</span>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-sm">无数据</p>
+        {% endif %}
+      </div>
+
+      <!-- 趋势图 -->
+      <div class="glass-card rounded-xl p-4">
+        <h3 class="text-sm font-medium text-gray-300 mb-3">高度/速度趋势</h3>
+        <div class="h-40">
+          <canvas id="telemetryChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if flight_data %}
+<script>
+  const fdData = {{ flight_data_dicts | tojson }};
+  new Chart(document.getElementById('telemetryChart'), {
+    type: 'line',
+    data: {
+      labels: fdData.map((_, i) => i),
+      datasets: [
+        { label: '高度(m)', data: fdData.map(d => d.altitude), borderColor: '#00d4ff', borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+        { label: '速度(m/s)', data: fdData.map(d => d.speed), borderColor: '#00ff88', borderWidth: 1.5, pointRadius: 0, tension: 0.3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: { display: false } },
+      plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

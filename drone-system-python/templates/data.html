@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}数据分析 - 无人机作业管理系统{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <h1 class="text-xl font-bold text-white">数据分析</h1>
+
+  <!-- 趋势图 -->
+  <div class="glass-card rounded-xl p-4">
+    <h3 class="text-sm font-medium text-gray-300 mb-4">飞行数据趋势（最近记录）</h3>
+    <div class="h-64">
+      <canvas id="dataChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 过滤器 -->
+  <div class="flex gap-3 flex-wrap items-center">
+    <form method="GET" class="flex gap-3 flex-wrap items-center">
+      <select name="drone" onchange="this.form.submit()" class="bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        <option value="all" {{ 'selected' if drone_filter == 'all' }}>全部无人机</option>
+        {% for d in drones %}
+        <option value="{{ d.id }}" {{ 'selected' if drone_filter == d.id }}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <span class="text-sm text-gray-500">共 {{ total }} 条记录</span>
+  </div>
+
+  <!-- 数据表格 -->
+  <div class="glass-card rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-gray-500 text-left bg-drone-dark/30">
+            <th class="px-4 py-3 font-medium">时间</th>
+            <th class="px-4 py-3 font-medium">高度(m)</th>
+            <th class="px-4 py-3 font-medium">速度(m/s)</th>
+            <th class="px-4 py-3 font-medium">电量(%)</th>
+            <th class="px-4 py-3 font-medium">温度(°C)</th>
+            <th class="px-4 py-3 font-medium">信号(%)</th>
+            <th class="px-4 py-3 font-medium">GPS精度(m)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-drone-border/50">
+          {% for fd in flight_data %}
+          <tr class="hover:bg-drone-accent/5 transition">
+            <td class="px-4 py-2.5 text-gray-300">{{ fd.timestamp[:19] }}</td>
+            <td class="px-4 py-2.5 text-cyan-400">{{ fd.altitude }}</td>
+            <td class="px-4 py-2.5 text-green-400">{{ fd.speed }}</td>
+            <td class="px-4 py-2.5 {{ 'text-red-400' if fd.battery < 30 else 'text-yellow-400' if fd.battery < 60 else 'text-green-400' }}">{{ fd.battery }}</td>
+            <td class="px-4 py-2.5 text-orange-400">{{ fd.temperature }}</td>
+            <td class="px-4 py-2.5 text-purple-400">{{ fd.signal_strength }}</td>
+            <td class="px-4 py-2.5 text-gray-400">{{ fd.gps_accuracy }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 分页 -->
+    {% if total_pages > 1 %}
+    <div class="flex items-center justify-between px-4 py-3 border-t border-drone-border">
+      <span class="text-sm text-gray-500">第 {{ page }}/{{ total_pages }} 页</span>
+      <div class="flex gap-2">
+        {% if page > 1 %}
+        <a href="?drone={{ drone_filter }}&page={{ page - 1 }}" class="px-3 py-1.5 rounded text-sm glass-card text-gray-400 hover:text-drone-accent transition">上一页</a>
+        {% endif %}
+        {% if page < total_pages %}
+        <a href="?drone={{ drone_filter }}&page={{ page + 1 }}" class="px-3 py-1.5 rounded text-sm glass-card text-gray-400 hover:text-drone-accent transition">下一页</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const allData = {{ flight_data_all_dicts | tojson }};
+  const recent = allData.slice(-30);
+  new Chart(document.getElementById('dataChart'), {
+    type: 'line',
+    data: {
+      labels: recent.map((_, i) => i + 1),
+      datasets: [
+        { label: '高度(m)', data: recent.map(d => d.altitude), borderColor: '#00d4ff', borderWidth: 1.5, pointRadius: 1, tension: 0.3, fill: false },
+        { label: '速度(m/s)', data: recent.map(d => d.speed), borderColor: '#00ff88', borderWidth: 1.5, pointRadius: 1, tension: 0.3, fill: false },
+        { label: '电量(%)', data: recent.map(d => d.battery), borderColor: '#ffaa00', borderWidth: 1.5, pointRadius: 1, tension: 0.3, fill: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' } },
+      scales: { x: { title: { display: true, text: '记录序号' } } }
+    }
+  });
+</script>
+{% endblock %}

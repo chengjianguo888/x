@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}系统设置 - 无人机作业管理系统{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <h1 class="text-xl font-bold text-white">系统设置</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- 通用设置 -->
+    <div class="glass-card rounded-xl p-5">
+      <h3 class="text-sm font-medium text-white mb-4 flex items-center gap-2">
+        <svg class="w-4 h-4 text-drone-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        通用设置
+      </h3>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">系统名称</div>
+            <div class="text-xs text-gray-500">显示在标题和侧边栏</div>
+          </div>
+          <input type="text" value="无人机作业管理系统" class="bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 w-48 focus:border-drone-accent focus:outline-none">
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">时区</div>
+            <div class="text-xs text-gray-500">系统时间显示</div>
+          </div>
+          <select class="bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+            <option selected>Asia/Shanghai (UTC+8)</option>
+            <option>UTC</option>
+          </select>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">语言</div>
+            <div class="text-xs text-gray-500">界面语言</div>
+          </div>
+          <select class="bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+            <option selected>简体中文</option>
+            <option>English</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 通知设置 -->
+    <div class="glass-card rounded-xl p-5">
+      <h3 class="text-sm font-medium text-white mb-4 flex items-center gap-2">
+        <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        通知设置
+      </h3>
+      <div class="space-y-4">
+        {% for label in ['电池低电量告警', '维护到期提醒', '任务完成通知', '设备离线告警', '风速超限警告'] %}
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-300">{{ label }}</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-drone-accent"></div>
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 安全设置 -->
+    <div class="glass-card rounded-xl p-5">
+      <h3 class="text-sm font-medium text-white mb-4 flex items-center gap-2">
+        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        安全设置
+      </h3>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">双因素认证</div>
+            <div class="text-xs text-gray-500">增强账号安全</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-drone-accent"></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">会话超时(分钟)</div>
+            <div class="text-xs text-gray-500">范围: 5-120</div>
+          </div>
+          <input type="number" value="30" min="5" max="120" class="bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 w-20 text-center focus:border-drone-accent focus:outline-none">
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">最大登录尝试</div>
+            <div class="text-xs text-gray-500">范围: 3-10</div>
+          </div>
+          <input type="number" value="5" min="3" max="10" class="bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 w-20 text-center focus:border-drone-accent focus:outline-none">
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据设置 -->
+    <div class="glass-card rounded-xl p-5">
+      <h3 class="text-sm font-medium text-white mb-4 flex items-center gap-2">
+        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        数据设置
+      </h3>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">数据保留天数</div>
+            <div class="text-xs text-gray-500">范围: 30-365</div>
+          </div>
+          <input type="number" value="90" min="30" max="365" class="bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 w-20 text-center focus:border-drone-accent focus:outline-none">
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">自动备份</div>
+            <div class="text-xs text-gray-500">定期备份飞行数据</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-drone-accent"></div>
+          </label>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm text-gray-300">数据压缩</div>
+            <div class="text-xs text-gray-500">减少存储空间</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-drone-accent"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 网络设置 -->
+    <div class="glass-card rounded-xl p-5 lg:col-span-2">
+      <h3 class="text-sm font-medium text-white mb-4 flex items-center gap-2">
+        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        网络设置
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-gray-300 mb-1">API 服务器地址</label>
+          <div class="flex gap-2">
+            <input type="text" value="https://api.drone-ops.local" class="flex-1 bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+            <button class="text-xs bg-drone-accent/20 text-drone-accent hover:bg-drone-accent/30 px-3 rounded-lg transition" onclick="alert('连接测试（演示）')">测试</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-300 mb-1">数据服务器地址</label>
+          <div class="flex gap-2">
+            <input type="text" value="https://data.drone-ops.local" class="flex-1 bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+            <button class="text-xs bg-drone-accent/20 text-drone-accent hover:bg-drone-accent/30 px-3 rounded-lg transition" onclick="alert('连接测试（演示）')">测试</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-300 mb-1">WebSocket 端口</label>
+          <input type="number" value="8080" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-sm text-gray-300 mb-1">网络超时(秒)</label>
+          <input type="number" value="30" class="w-full bg-drone-dark/50 border border-drone-border rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:border-drone-accent focus:outline-none">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 操作按钮 -->
+  <div class="flex gap-3 justify-end">
+    <button class="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white glass-card transition" onclick="alert('设置已重置（演示）')">恢复默认</button>
+    <button class="bg-drone-accent hover:bg-cyan-400 text-drone-dark px-4 py-2 rounded-lg text-sm font-medium transition" onclick="alert('设置已保存（演示）')">保存设置</button>
+  </div>
+</div>
+{% endblock %}

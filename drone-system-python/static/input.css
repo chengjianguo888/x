@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --color-drone-dark: #0a0f1e;
+  --color-drone-card: #0d1b2a;
+  --color-drone-border: #1a2744;
+  --color-drone-accent: #00d4ff;
+  --color-drone-success: #00ff88;
+  --color-drone-warning: #ffaa00;
+  --color-drone-danger: #ff4444;
+}
